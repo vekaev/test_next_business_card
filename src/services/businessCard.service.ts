@@ -5,8 +5,8 @@ const BusinessCard = z.object({
   id: z.number(),
   phone: z.string(),
   parsed_name: z.object({
-    given_name: z.string(),
-    family_name: z.string(),
+    given_name: z.string().optional(),
+    family_name: z.string().optional(),
   }),
   email: z.string().optional(),
 });

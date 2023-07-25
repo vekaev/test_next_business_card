@@ -6,12 +6,12 @@ export const useImageUpload = () => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const uploadImage = useCallback(async (file: File, fileName: string): Promise<string> => {
+  const uploadImage = useCallback(async (file: File): Promise<string> => {
     setLoading(true);
     setError(false);
 
     try {
-      const data = await BlobService.uploadFile(file, fileName);
+      const data = await BlobService.uploadFile(file, file.name);
 
       setUploadedImageUrl(data);
       setLoading(false);

@@ -28,7 +28,7 @@ export const BlobService = {
       .send(new PutObjectCommand(params))
       .then(
         () =>
-          `https://${config.bucketName}.s3.${config.region}.amazonaws.com/${file.name}`
+          `https://${config.bucketName}.s3.${config.region}.amazonaws.com/${fileName}`
       ).catch(() => {
         throw new Error("Failed to upload file");
       });

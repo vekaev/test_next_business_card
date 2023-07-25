@@ -31,7 +31,7 @@ export default function Home() {
     onError: () => void;
     onSuccess: () => void;
   }) => {
-    uploadImage(file, new Date().toISOString())
+    uploadImage(file)
       .then(() => onSuccess())
       .catch(() => {
         message.error("Upload failed.");
