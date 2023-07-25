@@ -1,95 +1,103 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client";
+
+import { useEffect, useCallback } from "react";
+import { Button, Typography, Upload, message } from "antd";
+import { UploadOutlined, ContactsOutlined } from "@ant-design/icons";
+
+import { downloadFile } from "@/utils/downloadFile";
+import { VCardService } from "@/services/vcard.service";
+import { useImageUpload } from "@/hooks/useImageUpload";
+import { useParseBusinessCard } from "@/hooks/useParseBusinessCard";
 
 export default function Home() {
+  const {
+    uploadImage,
+    uploadedImageUrl,
+    loading: isImageUploadLoading
+  } = useImageUpload();
+  const {
+    businessCard,
+    error: isParseError,
+    loading: isParseLoading,
+    isSuccess: isParseSuccess,
+  } = useParseBusinessCard(uploadedImageUrl);
+
+  const handleUpload = useCallback(({
+    file,
+    onError,
+    onSuccess,
+  }: {
+    file: File;
+    onError: () => void;
+    onSuccess: () => void;
+  }) => {
+    uploadImage(file, new Date().toISOString())
+      .then(() => onSuccess())
+      .catch(() => {
+        message.error("Upload failed.");
+        onError();
+      });
+  }, [uploadImage]);
+
+  const handleDownloadVCard = useCallback(async () => {
+    if (!businessCard) return;
+
+    try {
+      // TODO: move key to constants
+      message.loading({ content: "Loading contact card...", key: "download" });
+      const result  = await VCardService.downloadVCard(businessCard)
+      downloadFile(new Blob([result]), "contact.vcf");
+    } catch (error) {
+      message.error("Download failed.");
+    } finally {
+      message.destroy("download");
+    }
+  }, [businessCard]);
+
+  useEffect(() => {
+    if (isParseLoading)
+      message.loading({ content: "Parsing business card...", key: "parse" });
+    else if (isParseSuccess) {
+      message.success({ content: "Parse success.", key: "parse" });
+    } else if (isParseError) {
+      message.error({ content: "Parse failed.", key: "parse" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isParseLoading]);
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+    <main style={{
+      display: "flex",
+      textAlign: "center",
+      flexDirection: "column"
+    }}>
+      <Typography.Title>Business Card Photo - Phone Contact</Typography.Title>
+      <Upload
+        maxCount={1}
+        accept='image/*'
+        listType='picture'
+        // TODO: Fix type
+        customRequest={handleUpload as () => void}
+        disabled={isImageUploadLoading}
+      >
+        <Button
+          size='large'
+          loading={isImageUploadLoading}
+          disabled={isImageUploadLoading}
         >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+          Upload image <UploadOutlined />
+        </Button>
+      </Upload>
+      <Button
+        size='large'
+        loading={isParseLoading}
+        disabled={isParseLoading || !isParseSuccess}
+        style={{ marginTop: 10 }}
+        onClick={handleDownloadVCard}
+      >
+        Save to contacts
+        <ContactsOutlined />
+      </Button>
     </main>
-  )
+  );
 }
